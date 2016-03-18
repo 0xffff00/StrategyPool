@@ -47,12 +47,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration.cs" />
-    <Compile Include="DataTableApplicatino.cs" />
+    <Compile Include="DataApplication.cs" />
     <Compile Include="DocumentApplication.cs" />
     <Compile Include="Impv.cs" />
+    <Compile Include="PositionApplication.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlApplication.cs" />
+    <Compile Include="StructSet.cs" />
+    <Compile Include="TimeSpread.cs" />
     <Compile Include="TradeDays.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -12,6 +12,11 @@
 版本：v1.0.1
 日期：2016年3月17日。
 ##############################################
+添加获取盘口价格和盘口变动的功能。
+作者：毛衡
+版本：v1.0.2
+日期：2016年3月18日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -27,9 +32,13 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            DataTableApplication myTable = new DataTableApplication(Configuration.connectionString, "sh510050");
-            myTable.GetDataTable("select * from sh10000011 where [Date]=20150209");
-            DataRow[] dtrow = myTable.GetData("Date=20150209");
+            DataApplication data = new DataApplication(Configuration.dataBaseName, Configuration.connectionString);
+            DataTable dt = data.GetDataTable("sh10000001", 20150209);
+            List<optionFormat> optionList = data.GetOptionList(dt);
+            PositionApplication myPosition = new PositionApplication(optionList);
+            optionPositionChange[] mychange = myPosition.GetPositionChange();
+            dt = data.GetDataTable("sh510050", 20150209);
+            stockFormat[] stockArray = data.GetStockArray(dt);
         }
     }
 }

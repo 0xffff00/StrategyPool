@@ -53,37 +53,6 @@ namespace StrategyPool
         /// </summary>
         public static int[] myTradeTicks { get; set; }
 
-
-        /// <summary>
-        /// 静态函数。将数组下标转化为具体时刻。
-        /// </summary>
-        /// <param name="index">下标</param>
-        /// <returns>时刻</returns>
-        public static int indexToTime(int index)
-        {
-            int time0 = index * 500;
-            int hour = time0 / 3600000;
-            time0 = time0 % 3600000;
-            int minute = time0 / 60000;
-            time0 = time0 % 60000;
-            int second = time0;
-            if (hour < 2)
-            {
-                hour += 9;
-                minute += 30;
-                if (minute >= 60)
-                {
-                    minute -= 60;
-                    hour += 1;
-                }
-            }
-            else
-            {
-                hour += 11;
-            }
-            return hour * 10000000 + minute * 100000 + second;
-        }
-
         /// <summary>
         /// 静态函数。提供数据库sql连接字符串信息。
         /// </summary>
@@ -333,9 +302,9 @@ namespace StrategyPool
             //生成每个tick对应的数组下标，便于后期的计算。
             if (myTradeTicks == null)
             {
-                myTradeTicks = new int[28800];
+                myTradeTicks = new int[28802];
             }
-            for (int timeIndex = 0; timeIndex < 28800; timeIndex++)
+            for (int timeIndex = 0; timeIndex <= 28801; timeIndex++)
             {
                 myTradeTicks[timeIndex] = IndexToTime(timeIndex);
             }
@@ -533,13 +502,21 @@ namespace StrategyPool
         /// <returns>时刻</returns>
         public static int IndexToTime(int index)
         {
-            int time0 = index * 500;
+            int time0;
+            if (index<=14400)
+            {
+                time0 = index * 500;
+            }
+            else
+            {
+                time0 = (index-1) * 500;
+            }
             int hour = time0 / 3600000;
             time0 = time0 % 3600000;
             int minute = time0 / 60000;
             time0 = time0 % 60000;
             int second = time0;
-            if (hour < 2)
+            if (hour <= 2  && index<=14400)
             {
                 hour += 9;
                 minute += 30;
@@ -571,7 +548,7 @@ namespace StrategyPool
             int index;
             if (hour >= 13)
             {
-                index = 14400 + (hour - 13) * 7200 + minute * 120 + tick;
+                index = 14400 + (hour - 13) * 7200 + minute * 120 + tick+1;
             }
             else
             {
