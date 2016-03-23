@@ -24,6 +24,7 @@
 日期：2016年3月21日。
 ##############################################
 1、按照tick的数据进行回测，包括开平仓条件的判断
+2、对持仓状态进行记录
 作者：毛衡
 版本：v1.0.4
 日期：2016年3月23日。
@@ -43,7 +44,7 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            TimeSpread mySpread = new TimeSpread(1000000, 20150416, 20150531);
+            TimeSpread mySpread = new TimeSpread(1000000, 20150701, 20150731);
             mySpread.TimeSpreadAnalysis();
 
         }

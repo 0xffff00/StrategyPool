@@ -151,6 +151,7 @@ namespace StrategyPool
             nextShot.preClose = lastShot.preClose;
             nextShot.preSettle = lastShot.preSettle;
             nextShot.strike = lastShot.strike;
+            nextShot.type = lastShot.type;
             nextShot.lastPrice = change.lastPrice;
             //计算变动的部分
             #region 计算ask部分

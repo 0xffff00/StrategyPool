@@ -34,21 +34,21 @@ namespace StrategyPool
         /// 利用期权价格等参数计算隐含波动率
         /// </summary>
         /// <param name="etfPrice">50etf价格</param>
-        /// <param name="optioLastPrice">期权价格</param>
+        /// <param name="optionLastPrice">期权价格</param>
         /// <param name="strike">期权行权价</param>
         /// <param name="duration">期权到日期</param>
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型区分看涨还是看跌</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigma(double etfPrice, double optioLastPrice, double strike, double duration, double r, string optionType)
+        public static double sigma(double etfPrice, double optionLastPrice, double strike, double duration, double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
-                return sigmaOfCall(optioLastPrice, etfPrice, strike, duration / 252.0, r);
+                return sigmaOfCall(optionLastPrice, etfPrice, strike, duration / 252.0, r);
             }
             else if (optionType.Equals("认沽"))
             {
-                return sigmaOfPut(optioLastPrice, etfPrice, strike, duration / 252.0, r);
+                return sigmaOfPut(optionLastPrice, etfPrice, strike, duration / 252.0, r);
             }
             return 0;
         }
@@ -63,7 +63,7 @@ namespace StrategyPool
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型看涨还是看跌</param>
         /// <returns>返回期权理论价格</returns>
-        public static double optioLastPrice(double etfPrice, double sigma, double strike, double duration, double r, string optionType)
+        public static double optionLastPrice(double etfPrice, double sigma, double strike, double duration, double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
@@ -288,21 +288,21 @@ namespace StrategyPool
         /// 利用期权价格等参数计算隐含波动率
         /// </summary>
         /// <param name="etfPrice">50etf价格</param>
-        /// <param name="optioLastPrice">期权价格</param>
+        /// <param name="optionLastPrice">期权价格</param>
         /// <param name="strike">期权行权价</param>
         /// <param name="duration">期权到日期</param>
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型区分看涨还是看跌</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigma(double etfPrice, double optioLastPrice, double strike, int duration, double r, string optionType)
+        public static double sigma(double etfPrice, double optionLastPrice, double strike, int duration, double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
-                return sigmaOfCall(optioLastPrice, etfPrice, strike, ((double)duration) / 252.0, r);
+                return sigmaOfCall(optionLastPrice, etfPrice, strike, ((double)duration) / 252.0, r);
             }
             else if (optionType.Equals("认沽"))
             {
-                return sigmaOfPut(optioLastPrice, etfPrice, strike, ((double)duration) / 252.0, r);
+                return sigmaOfPut(optionLastPrice, etfPrice, strike, ((double)duration) / 252.0, r);
             }
             return 0;
         }
@@ -317,7 +317,7 @@ namespace StrategyPool
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型看涨还是看跌</param>
         /// <returns>返回期权理论价格</returns>
-        public static double optioLastPrice(double etfPrice, double sigma, double strike, int duration, double r, string optionType)
+        public static double optionLastPrice(double etfPrice, double sigma, double strike, int duration, double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
