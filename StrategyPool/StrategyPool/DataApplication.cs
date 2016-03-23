@@ -95,7 +95,7 @@ namespace StrategyPool
                 option.date = (int)row["Date"];
                 //剔除非交易时间的交易数据。
                 int now = (int)row["Time"] + (int)row["Tick"] * 500;
-                if (now<93000000 || (now>113000000 && now<130000000) || (now>150000000))
+                if (now<93000000 || (now>113000000 && now<130000000) || (now>150000000) || (int)row["Tick"]>=2)
                 {
                     continue;
                 }
@@ -120,6 +120,30 @@ namespace StrategyPool
         }
 
         /// <summary>
+        /// 根据期权合约信息的数据整理得到链表。
+        /// </summary>
+        /// <param name="data">DataTable格式的数据源</param>
+        /// <returns>SortedDictionary格式的处理后的数据</returns>
+        public SortedDictionary<int,optionInfo> GetOptionInfoList(DataTable data)
+        {
+            SortedDictionary<int, optionInfo> myList = new SortedDictionary<int, optionInfo>();
+            foreach (DataRow row in data.Rows)
+            {
+                optionInfo contract = new optionInfo();
+                contract.optionCode = (int)row["OptionCode"];
+                contract.optionName = row["OptionName"].ToString().Trim();
+                contract.executeType = row["ExecuteType"].ToString().Trim();
+                contract.strike = (double)row["Strike"];
+                contract.optionType = row["OptionType"].ToString().Trim();
+                contract.startDate = (int)row["StartDate"];
+                contract.endDate = (int)row["EndDate"];
+                contract.market = row["Market"].ToString().Trim();
+                myList.Add(contract.optionCode, contract);
+            }
+            return myList;
+        }
+
+        /// <summary>
         /// 根据股票数据或者期货数据整理得到的链表
         /// </summary>
         /// <param name="data">DataTable格式的股票或者期货数据</param>
@@ -137,7 +161,7 @@ namespace StrategyPool
                 stock.date = (int)row["Date"];
                 //剔除非交易时间的交易数据。
                 int now = (int)row["Time"] + (int)row["Tick"] * 500;
-                if (now < 93000000 || (now > 113000000 && now < 130000000) || (now > 150000000))
+                if (now < 93000000 || (now > 113000000 && now < 130000000) || (now > 150000000) || (int)row["Tick"] >= 2)
                 {
                     continue;
                 }
@@ -177,7 +201,7 @@ namespace StrategyPool
                 stock.date = (int)row["Date"];
                 //剔除非交易时间的交易数据。
                 int now = (int)row["Time"] + (int)row["Tick"] * 500;
-                if (now < 93000000 || (now > 113000000 && now < 130000000) || (now > 150000000))
+                if (now < 93000000 || (now > 113000000 && now < 130000000) || (now > 150000000) || (int)row["Tick"] >= 2)
                 {
                     continue;
                 }
@@ -199,5 +223,37 @@ namespace StrategyPool
             return stockArray;
         }
 
+        /// <summary>
+        /// 获取最大的成交价
+        /// </summary>
+        /// <param name="myArray">交易数据</param>
+        /// <returns>最大成交价</returns>
+        public double GetArrayMaxLastPrice(stockFormat[] myArray)
+        {
+            double maxPrice = 0;
+            foreach (var item in myArray)
+            {
+                maxPrice = (maxPrice > item.lastPrice) ? maxPrice : item.lastPrice;
+            }
+            return maxPrice;
+        }
+
+        /// <summary>
+        /// 获取最小成交价
+        /// </summary>
+        /// <param name="myArray">交易数据</param>
+        /// <returns>最小成交价</returns>
+        public double GetArrayMinLastPrice(stockFormat[] myArray)
+        {
+            double minPrice = 999;
+            foreach (var item in myArray)
+            {
+                if (item.lastPrice>0)
+                {
+                    minPrice = (minPrice < item.lastPrice ) ? minPrice : item.lastPrice;
+                }
+            }
+            return minPrice;
+        }
     }
 }

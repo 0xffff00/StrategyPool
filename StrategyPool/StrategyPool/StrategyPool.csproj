@@ -49,7 +49,9 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="DataApplication.cs" />
     <Compile Include="DocumentApplication.cs" />
+    <Compile Include="HoldStatus.cs" />
     <Compile Include="Impv.cs" />
+    <Compile Include="OptionCodeInformation.cs" />
     <Compile Include="PositionApplication.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

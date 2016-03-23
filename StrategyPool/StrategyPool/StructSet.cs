@@ -44,11 +44,11 @@ namespace StrategyPool
     /// </summary>
     struct optionPriceWithGreek
     {
-        public double price, volumn, volatility, delta;
-        public optionPriceWithGreek(double price,double volumn,double volatility,double delta)
+        public double price, volume, volatility, delta;
+        public optionPriceWithGreek(double price,double volume,double volatility,double delta)
         {
             this.price = price;
-            this.volumn = volumn;
+            this.volume = volume;
             this.volatility = volatility;
             this.delta = delta;
         }
@@ -71,11 +71,11 @@ namespace StrategyPool
     /// </summary>
     struct stockPrice
     {
-        public double price, volumn;
-        public stockPrice(double price,double volumn)
+        public double price, volume;
+        public stockPrice(double price,double volume)
         {
             this.price = price;
-            this.volumn = volumn;
+            this.volume = volume;
         }
     }
 
@@ -93,4 +93,45 @@ namespace StrategyPool
         public double strike;
         public string market;
     }
+
+    /// <summary>
+    /// 描述持仓仓位和成本的结构体
+    /// </summary>
+    struct optionHold
+    {
+        public double position;
+        public double cost;
+    }
+
+    /// <summary>
+    /// 描述资金情况的结构体
+    /// </summary>
+    struct capitalCondition
+    {
+        public double availableFunds;
+        public double optionMargin;
+        public double IHhold, IHprice;
+        public double IHMargin;
+        public Dictionary<int, optionHold> optionList;
+        public capitalCondition(double availableFunds,double optionMargin,double IHhold,double IHprice,double IHMargin)
+        {
+            this.availableFunds = availableFunds;
+            this.optionMargin = optionMargin;
+            this.IHhold = IHhold;
+            this.IHprice = IHprice;
+            this.IHMargin = IHMargin;
+            optionList = new Dictionary<int, optionHold>();
+        }
+
+    }
+
+    /// <summary>
+    /// 跨期交易期权对
+    /// </summary>
+    struct timeSpreadPair
+    {
+        public int frontCode;
+        public int nextCode;
+    }
+
 }

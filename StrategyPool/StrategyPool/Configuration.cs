@@ -46,5 +46,9 @@ namespace StrategyPool
         /// 无风险收益率。
         /// </summary>
         public static double RiskFreeReturn = 0.05;
+        /// <summary>
+        /// 每张期权合约的手续费。
+        /// </summary>
+        public static double optionFeePerUnit = 2.3;
     }
 }

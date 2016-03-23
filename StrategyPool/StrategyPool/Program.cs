@@ -17,6 +17,17 @@
 版本：v1.0.2
 日期：2016年3月18日。
 ##############################################
+1、完善获取期权合约代码信息的类。
+2、开始构建timeSpread的回测。
+作者：毛衡
+版本：v1.0.3
+日期：2016年3月21日。
+##############################################
+1、按照tick的数据进行回测，包括开平仓条件的判断
+作者：毛衡
+版本：v1.0.4
+日期：2016年3月23日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -32,13 +43,9 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            DataApplication data = new DataApplication(Configuration.dataBaseName, Configuration.connectionString);
-            DataTable dt = data.GetDataTable("sh10000001", 20150209);
-            List<optionFormat> optionList = data.GetOptionList(dt);
-            PositionApplication myPosition = new PositionApplication(optionList);
-            optionPositionChange[] mychange = myPosition.GetPositionChange();
-            dt = data.GetDataTable("sh510050", 20150209);
-            stockFormat[] stockArray = data.GetStockArray(dt);
+            TimeSpread mySpread = new TimeSpread(1000000, 20150416, 20150531);
+            mySpread.TimeSpreadAnalysis();
+
         }
     }
 }

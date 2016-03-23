@@ -104,13 +104,18 @@ namespace StrategyPool
         }
 
         /// <summary>
-        /// 静态函数。获取交易日间隔天数。
+        /// 静态函数。获取交易日间隔天数。若输入不符合要求返回-1。
         /// </summary>
         /// <param name="firstday">开始日期</param>
         /// <param name="lastday">结束日期</param>
         /// <returns>间隔天数</returns>
         public static int GetTimeSpan(int firstday, int lastday)
         {
+            if (firstday>lastday)
+            {
+                //Console.WriteLine("error in GetTimeSpan!");
+                return -1;
+            }
             if (firstday >= tradeDaysOfDataBase[0] && lastday <= tradeDaysOfDataBase[tradeDaysOfDataBase.Count - 1] && lastday >= firstday)
             {
                 int startIndex = -1, endIndex = -1;
