@@ -29,6 +29,12 @@
 版本：v1.0.4
 日期：2016年3月23日。
 ##############################################
+1、讲成交记录写入数据库。
+2、计算给定时刻的cash delta。
+作者：毛衡
+版本：v1.0.5
+日期：2016年3月24日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -44,9 +50,8 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            TimeSpread mySpread = new TimeSpread(1000000, 20150701, 20150731);
+            TimeSpread mySpread = new TimeSpread(100000000, 20150901, 20150931);
             mySpread.TimeSpreadAnalysis();
-
         }
     }
 }

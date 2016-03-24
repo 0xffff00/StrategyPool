@@ -101,19 +101,24 @@ namespace StrategyPool
     {
         public double position;
         public double cost;
+        public optionHold(double cost,double position)
+        {
+            this.cost = cost;
+            this.position = position;
+        }
     }
 
     /// <summary>
     /// 描述资金情况的结构体
     /// </summary>
-    struct capitalCondition
+    struct cashStatus
     {
         public double availableFunds;
         public double optionMargin;
         public double IHhold, IHprice;
         public double IHMargin;
         public Dictionary<int, optionHold> optionList;
-        public capitalCondition(double availableFunds,double optionMargin,double IHhold,double IHprice,double IHMargin)
+        public cashStatus(double availableFunds,double optionMargin,double IHhold,double IHprice,double IHMargin)
         {
             this.availableFunds = availableFunds;
             this.optionMargin = optionMargin;
@@ -132,6 +137,27 @@ namespace StrategyPool
     {
         public int frontCode;
         public int nextCode;
+    }
+
+    /// <summary>
+    /// 记录期权具体的交易信息
+    /// </summary>
+    struct optionTradeRecord
+    {
+        public int optionCode;
+        public int date;
+        public int time;
+        public double price;
+        public double volume;
+        public optionTradeRecord(int optionCode,int date,int time,double price,double volume)
+        {
+            this.optionCode = optionCode;
+            this.date = date;
+            this.time = time;
+            this.price = price;
+            this.volume = volume;
+        }
+
     }
 
 }
