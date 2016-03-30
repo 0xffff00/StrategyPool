@@ -48,7 +48,7 @@ namespace StrategyPool
         {
             int lastTime = lastPosition.time ;
             int thisTime = thisPosition.time ;
-            optionPositionChange myChange= new optionPositionChange(lastTime, thisTime, thisPosition.lastPrice);
+            optionPositionChange myChange= new optionPositionChange(lastTime, thisTime, thisPosition.lastPrice,thisPosition.midDelta,thisPosition.midVolatility);
             //分别处理ask和bid的盘口价格，通过分析前一状态的盘口价格和后一状态的盘口价格，得到两个盘口价格之间的具体变动信息。数据结构使用哈希表便于理解和处理。
             #region ask处理的新方法
             SortedDictionary<double, optionPriceWithGreek> askChange = new SortedDictionary<double, optionPriceWithGreek>();
@@ -153,6 +153,8 @@ namespace StrategyPool
             nextShot.strike = lastShot.strike;
             nextShot.type = lastShot.type;
             nextShot.lastPrice = change.lastPrice;
+            nextShot.midDelta = change.midDelta;
+            nextShot.midVolatility = change.midVolatility;
             //计算变动的部分
             #region 计算ask部分
             SortedDictionary<double, optionPriceWithGreek> ask = new SortedDictionary<double, optionPriceWithGreek>();

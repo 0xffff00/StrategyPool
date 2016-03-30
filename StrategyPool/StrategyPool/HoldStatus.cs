@@ -18,7 +18,7 @@ namespace StrategyPool
         /// <param name="initialCapital">启动资金。</param>
         public HoldStatus(double initialCapital)
         {
-            cashNow = new cashStatus(initialCapital, 0, 0,0,0);
+            cashNow = new cashStatus(initialCapital);
         }
 
         /// <summary>
@@ -86,13 +86,20 @@ namespace StrategyPool
         }
 
         /// <summary>
-        /// 处理IH头寸变动的函数。
+        /// 计算IH的持仓和保证金情况
         /// </summary>
-        /// <param name="IHChange"></param>
-        public void InsertIHChange(stockFormat IHChange)
+        /// <param name="price">价格</param>
+        /// <param name="volume">交易量</param>
+        public void IHStatusModification(double price,double volume )
         {
-
+            cashNow.IHMargin -= 300*(cashNow.IHprice - price) * cashNow.IHhold;
+            double marginNeed = price * 300 * 0.2*Math.Abs(cashNow.IHhold+volume);
+            double fee =Math.Abs(volume)*price * 300 * 2 / 10000;
+            cashNow.availableFunds += cashNow.IHMargin - marginNeed-fee;
+            cashNow.IHCost+= cashNow.IHMargin - marginNeed-fee;
+            cashNow.IHMargin = marginNeed;
+            cashNow.IHhold = cashNow.IHhold + volume;
+            cashNow.IHprice = (cashNow.IHhold==0)?0:price;
         }
-
     }
 }

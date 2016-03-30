@@ -19,6 +19,7 @@ namespace StrategyPool
         public double lastPrice;
         public optionPriceWithGreek[] ask, bid;
         public double preClose, preSettle;
+        public double midDelta, midVolatility;
         public double openMargin;
     }
 
@@ -29,12 +30,15 @@ namespace StrategyPool
     {
         public int lastTime,thisTime;
         public double lastPrice;
+        public double midDelta, midVolatility;
         public List<optionPriceWithGreek> askChange, bidChange;
-        public optionPositionChange(int lastTime,int thisTime,double lastPrice)
+        public optionPositionChange(int lastTime,int thisTime,double lastPrice,double midDelta,double midVolatility)
         {
             this.lastTime = lastTime;
             this.thisTime = thisTime;
             this.lastPrice = lastPrice;
+            this.midDelta = midDelta;
+            this.midVolatility = midVolatility;
             askChange = new List<optionPriceWithGreek>();
             bidChange = new List<optionPriceWithGreek>();
         }
@@ -115,16 +119,16 @@ namespace StrategyPool
     {
         public double availableFunds;
         public double optionMargin;
-        public double IHhold, IHprice;
-        public double IHMargin;
+        public double IHhold, IHprice, IHMargin,IHCost;
         public Dictionary<int, optionHold> optionList;
-        public cashStatus(double availableFunds,double optionMargin,double IHhold,double IHprice,double IHMargin)
+        public cashStatus(double availableFunds,double optionMargin=0,double IHhold=0,double IHprice=0,double IHMargin=0,double IHCost=0)
         {
             this.availableFunds = availableFunds;
             this.optionMargin = optionMargin;
             this.IHhold = IHhold;
             this.IHprice = IHprice;
             this.IHMargin = IHMargin;
+            this.IHCost = IHCost;
             optionList = new Dictionary<int, optionHold>();
         }
 
@@ -158,6 +162,22 @@ namespace StrategyPool
             this.volume = volume;
         }
 
+    }
+
+    /// <summary>
+    /// 期权持仓的状态
+    /// </summary>
+    struct optionStatus
+    {
+        public double presentValue;
+        public double margin;
+        public double delta;
+        public optionStatus(double PV,double margin,double delta)
+        {
+            this.presentValue = PV;
+            this.margin = margin;
+            this.delta = delta;
+        }
     }
 
 }

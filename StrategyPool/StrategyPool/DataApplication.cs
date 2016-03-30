@@ -114,6 +114,8 @@ namespace StrategyPool
                 option.openMargin = (double)row["OpenMargin"];
                 option.preClose = (double)row["PreClose"];
                 option.preSettle = (double)row["Presettle"];
+                option.midDelta = (double)row["MidDelta"];
+                option.midVolatility = (double)row["MidVolatility"];
                 optionList.Add(option);
             }
             return optionList;
