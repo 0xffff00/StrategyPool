@@ -172,11 +172,13 @@ namespace StrategyPool
         public double presentValue;
         public double margin;
         public double delta;
-        public optionStatus(double PV,double margin,double delta)
+        public double hold;
+        public optionStatus(double PV,double margin,double delta,double hold)
         {
             this.presentValue = PV;
             this.margin = margin;
             this.delta = delta;
+            this.hold = hold;
         }
     }
 

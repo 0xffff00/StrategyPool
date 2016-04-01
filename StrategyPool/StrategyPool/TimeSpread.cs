@@ -18,6 +18,9 @@ namespace StrategyPool
         private DataApplication myData;
         private double initialCapital;
         private string recordTableName;
+        private string recordCSV;
+        private double initialCash;
+        private List<double> netValue = new List<double>();
 
         /// <summary>
         /// 构造函数。初始化各类回测的信息。
@@ -27,6 +30,7 @@ namespace StrategyPool
         /// <param name="endDate">结束时间</param>
         public TimeSpread(double initialCapital,int startDate,int endDate)
         {
+            initialCash = initialCapital;
             myHoldStatus = new HoldStatus(initialCapital);
             this.initialCapital = initialCapital;
             this.startDate = startDate;
@@ -36,6 +40,22 @@ namespace StrategyPool
             feePerUnit = Configuration.optionFeePerUnit;
             myData = new DataApplication(Configuration.dataBaseName, Configuration.connectionString);
             recordTableName = "aRecord" + DateTime.Now.ToString("yyyyMMddhhmm");
+            recordCSV="Record"+ DateTime.Now.ToString("yyyyMMddhhmm")+".csv";
+            List<string[]> myRecordStringList = new List<string[]>();
+            string[] myRecordString = new string[11];
+            myRecordString[0] = "日期";
+            myRecordString[1] = "总资金";
+            myRecordString[2] = "可用资金";
+            myRecordString[3] = "期权保证金";
+            myRecordString[4] = "期货保证金";
+            myRecordString[5] = "期权现值";
+            myRecordString[6] = "总金额Delta";
+            myRecordString[7] = "期权金额Delta";
+            myRecordString[8] = "期货金额Delta";
+            myRecordString[9] = "日内开仓量";
+            myRecordString[10] ="当日持仓量";
+            myRecordStringList.Add(myRecordString);
+            DocumentApplication.WriteCsv(recordCSV, true, myRecordStringList);
         }
 
 
@@ -45,11 +65,13 @@ namespace StrategyPool
         public void TimeSpreadAnalysis()
         {
             double totalVolume = 0;
+            double dailyVolume = 0;
+            double lastDelta = 0;
             //逐步遍历交易日期，逐日进行回测。
             for (int dateIndex = 0; dateIndex < myTradeDays.myTradeDay.Count; dateIndex++)
             {
                 int today = myTradeDays.myTradeDay[dateIndex];
-                
+                dailyVolume = 0;
                 //从状态的类中取出当前的持仓情况。
                 Dictionary<int, optionHold> myHold = myHoldStatus.cashNow.optionList;
                 
@@ -196,12 +218,13 @@ namespace StrategyPool
                         double openVolume = 0;
                         if (myShot[pair.frontCode].ask!=null && myShot[pair.nextCode].bid!=null)
                         {
-                            openVolume = GetOpenPosition(myShot[pair.frontCode], myShot[pair.nextCode], today, tickIndex, ETFNow.lastPrice, duration, durationFurther);
+                            openVolume = GetOpenPosition2(myShot[pair.frontCode], myShot[pair.nextCode], today, tickIndex, ETFNow.lastPrice, duration, durationFurther);
                         }
                         //如果判断出需要开仓，一系列处理。
                         if (openVolume>0)
                         {
                             totalVolume += openVolume;
+                            dailyVolume += openVolume;
                             //处理盘口价格的变动
                             GetPositionModify(myShot[pair.nextCode], myShot[pair.frontCode], openVolume, time);
                             //处理持仓状态的变动
@@ -213,7 +236,6 @@ namespace StrategyPool
                             InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].bid[0].price, -openVolume);
                         }
                     }
-
                     if (tickIndex%600==0 && tickIndex>=1200)
                     {
                         optionStatus status=GetOptionStatus(myHold, myShot, ETFNow,today,tickIndex);
@@ -221,6 +243,15 @@ namespace StrategyPool
                        // Console.WriteLine("Date: {0}, Time: {1}, optionDelta: {2}, optionValue: {3}", today, time, Math.Round(cashDelta),Math.Round(status.presentValue));
                         double IHDelta = myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300;
                         double IHVolume = -Math.Round((cashDelta + IHDelta) / (IHNow.lastPrice * 300));
+                        myHoldStatus.IHStatusModification(IHNow.lastPrice, 0);
+                        if (Math.Abs(cashDelta + IHDelta-lastDelta)>300000 && Math.Abs(IHVolume) > 0)
+                        {
+                            lastDelta =cashDelta+ (myHoldStatus.cashNow.IHhold+IHVolume) * IHNow.lastPrice * 300;
+                        }
+                        else
+                        {
+                            IHVolume = 0;
+                        }
                         myHoldStatus.IHStatusModification(IHNow.lastPrice, 0);
                         if (Math.Abs(IHVolume)> 0)
                         {
@@ -255,10 +286,47 @@ namespace StrategyPool
                 double delta = ETFNow.lastPrice * statusLast.delta;
                 delta += myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300;
                 double totalCash = myHoldStatus.cashNow.availableFunds + myHoldStatus.cashNow.optionMargin + myHoldStatus.cashNow.IHMargin+statusLast.presentValue;
-                Console.WriteLine("Date: {0},money: {1}, margin: {2}, volume: {3}, delta: {4}, total: {5}", today,Math.Round(myHoldStatus.cashNow.availableFunds),Math.Round(myHoldStatus.cashNow.optionMargin),totalVolume,Math.Round(delta),Math.Round(totalCash));
-                StoreTradeList(recordList, recordTableName);
+                Console.WriteLine("Date: {0},money: {1}, margin: {2}, volume: {3}, delta: {4}, total: {5}， IHvalue：{6}", today,Math.Round(myHoldStatus.cashNow.availableFunds),Math.Round(myHoldStatus.cashNow.optionMargin),dailyVolume,Math.Round(delta),Math.Round(totalCash),Math.Round(myHoldStatus.cashNow.IHCost));
+                //StoreTradeList(recordList, recordTableName);
+                List<string[]> myRecordStringList = new List<string[]>();
+                string[] myRecordString = new string[11];
+                myRecordString[0] = today.ToString();
+                myRecordString[1] =Math.Round(totalCash).ToString();
+                myRecordString[2] = Math.Round(myHoldStatus.cashNow.availableFunds).ToString();
+                myRecordString[3] = Math.Round(myHoldStatus.cashNow.optionMargin).ToString();
+                myRecordString[4] = Math.Round(myHoldStatus.cashNow.IHMargin).ToString();
+                myRecordString[5] = Math.Round(statusLast.presentValue).ToString();
+                myRecordString[6] = Math.Round(delta).ToString();
+                myRecordString[7] = Math.Round(ETFNow.lastPrice * statusLast.delta).ToString();
+                myRecordString[8] = Math.Round(myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300).ToString();
+                myRecordString[9] = Math.Round(dailyVolume).ToString();
+                myRecordString[10] = Math.Round(statusLast.hold).ToString();
+                myRecordStringList.Add(myRecordString);
+                DocumentApplication.WriteCsv(recordCSV, true, myRecordStringList);
+                netValue.Add(Math.Round(totalCash/initialCash,4));
             }
+            double std = 0, mean = 0, withdrawal = 0, maxNetValue = 0;
 
+            for (int i = 0; i < netValue.Count; i++)
+            {
+                mean += netValue[i];
+                if (netValue[i] > maxNetValue)
+                {
+                    maxNetValue = netValue[i];
+                }
+                if ((netValue[i] / maxNetValue - 1) < withdrawal)
+                {
+                    withdrawal = netValue[i] / maxNetValue - 1;
+                }
+            }
+            mean /= netValue.Count + 1;
+            for (int i = 0; i < netValue.Count; i++)
+            {
+                std += Math.Pow(netValue[i] - mean, 2);
+            }
+            std = Math.Sqrt(std / netValue.Count);
+            double sharpeRatio = 1/Math.Sqrt(netValue.Count) *(netValue[netValue.Count - 1] - 1) / std;
+            Console.WriteLine("std: {0}, sharpe: {1}, withdrawal :{2}", std, sharpeRatio, withdrawal);
         }
 
         /// <summary>
@@ -276,10 +344,15 @@ namespace StrategyPool
             double durationPlus = (28801 - tickIndex) / 28801.0;
             double margin = 0;
             double presentValue = 0;
+            double hold = 0;
             foreach (var item in myHold)
             {
                 int optionCode = item.Key;
                 double volume = item.Value.position;
+                if (volume>0)
+                {
+                    hold += volume;
+                }
                 if (volume!=0)
                 {
                     optionFormat option = myShot[optionCode];
@@ -301,7 +374,7 @@ namespace StrategyPool
                     presentValue += volume * midPrice*10000;
                 }
             }
-            return new optionStatus(presentValue,margin,delta);
+            return new optionStatus(presentValue,margin,delta,hold);
         }
 
         /// <summary>
@@ -544,6 +617,62 @@ namespace StrategyPool
         }
 
         /// <summary>
+        /// 根据近月合约和远月合约的盘口价格和波动率情况来计算开仓的数量
+        /// </summary>
+        /// <param name="frontShot">近月合约情况</param>
+        /// <param name="nextShot">远月合约情况</param>
+        /// <param name="today">今日日期</param>
+        /// <param name="tickIndex">tick下标</param>
+        private double GetOpenPosition2(optionFormat frontShot, optionFormat nextShot, int today, int tickIndex, double etfPrice, double duration, double durationFurther)
+        {
+            double openVolume = 0;
+            double price = frontShot.bid[0].price;
+            double margin = frontShot.openMargin;
+            double volumn = frontShot.bid[0].volume;
+            double priceFurther = nextShot.ask[0].price;
+            double volumnFurther = nextShot.ask[0].volume;
+            bool open = false;
+            if (etfPrice * price * volumn * priceFurther * volumnFurther > 0)
+            {
+                double r = 0.05;
+                //利用BS公式计算近月以及远月期权的隐含波动率。并用这2个波动率差值得到近月合约到期时候，期权对应的隐含波动率。
+                double sigma = frontShot.bid[0].volatility;
+                double sigmaFurther = nextShot.ask[0].volatility;
+                double duration0 = duration + (28801 - tickIndex) / 28801.0;
+                double durationFurther0 = durationFurther + (28801 - tickIndex) / 28801.0;
+                double sigmaNew = Math.Sqrt(sigma * sigma * (duration0) / (durationFurther0 - duration0) + sigmaFurther * sigmaFurther * (durationFurther0 - 2 * duration0) / (durationFurther0 - duration0));
+                double sigmaNewForward= Math.Sqrt(-sigma * sigma * (duration0) / (duration0) + sigmaFurther * sigmaFurther * (durationFurther0) / (durationFurther0 - duration0));
+                double lossOfLiquidity = Math.Abs(frontShot.bid[0].price - frontShot.ask[0].price) + Math.Abs(nextShot.bid[0].price - nextShot.ask[0].price);
+                double strike = frontShot.strike;
+                string type = frontShot.type;
+                //利用隐含波动率来估计近月期权合约到期时候50etf的价格，这里使用若干倍的sigma来计算。
+                double etfPriceFurtherUp = etfPrice * Math.Exp(2 * sigma * Math.Sqrt(duration0 / 252.0));
+                double etfPriceFurtherDown = etfPrice * Math.Exp(-2 * sigma * Math.Sqrt(duration0 / 252.0));
+                double noChange = Impv.optionLastPrice(etfPrice, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPrice, sigmaNew, strike, 0, r, type);
+                //计算出持有头寸价值的上下限。
+                double up = Impv.optionLastPrice(etfPriceFurtherUp, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPriceFurtherUp, sigmaNew, strike, 0, r, type);
+                double down = Impv.optionLastPrice(etfPriceFurtherDown, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPriceFurtherDown, sigmaNew, strike, 0, r, type);
+                double interestNoChange = noChange - (priceFurther - price);
+                double interestUp = up - (priceFurther - price);
+                double interestDown = down - (priceFurther - price);
+                //利用收益风险比例是否大于1来判断开仓信息。
+                if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) > 1.5 || (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) > 0)
+                {
+                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && sigmaNew > 1.8 * sigmaNewForward)
+                    {
+                        open = true;
+                    }
+
+                }
+            }
+            if (open == true)
+            {
+                openVolume = Math.Min(volumn, volumnFurther);
+            }
+            return openVolume;
+        }
+
+        /// <summary>
         /// 处理平仓情况变化的函数
         /// </summary>
         /// <param name="longSideHold">买入头寸的持仓</param>
@@ -648,7 +777,7 @@ namespace StrategyPool
                 //止盈，只有收益大于一定程度才平仓。
                 double cost = nextHold.cost - frontHold.cost;//跨期组合开仓成本
                 double presentValue = nextShot.bid[0].price - frontShot.ask[0].price;//跨期组合的现值
-                if (presentValue/cost>1.25 && (presentValue-cost)>0.2)
+                if (presentValue/cost>1.25 && (presentValue-cost)>0.05)
                 {
                     close = true;
                 }
