@@ -54,6 +54,12 @@
 版本：v1.0.8
 日期：2016年4月1日。
 ##############################################
+1、修改记录CSV的函数。
+2、对开仓信号做了进一步的研究。
+作者：毛衡
+版本：v1.0.9
+日期：2016年4月11日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -69,7 +75,7 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231);
+            TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231,"timeSpread");
             mySpread.TimeSpreadAnalysis();
         }
     }

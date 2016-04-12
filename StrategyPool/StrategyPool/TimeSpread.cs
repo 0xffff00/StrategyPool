@@ -28,7 +28,7 @@ namespace StrategyPool
         /// <param name="initialCapital">初始资金</param>
         /// <param name="startDate">开始时间</param>
         /// <param name="endDate">结束时间</param>
-        public TimeSpread(double initialCapital,int startDate,int endDate)
+        public TimeSpread(double initialCapital,int startDate,int endDate,string recordStr)
         {
             initialCash = initialCapital;
             myHoldStatus = new HoldStatus(initialCapital);
@@ -39,23 +39,9 @@ namespace StrategyPool
             myOptionInfo = new OptionCodeInformation(Configuration.dataBaseName, Configuration.optionCodeTableName, Configuration.connectionString);
             feePerUnit = Configuration.optionFeePerUnit;
             myData = new DataApplication(Configuration.dataBaseName, Configuration.connectionString);
-            recordTableName = "aRecord" + DateTime.Now.ToString("yyyyMMddhhmm");
-            recordCSV="Record"+ DateTime.Now.ToString("yyyyMMddhhmm")+".csv";
-            List<string[]> myRecordStringList = new List<string[]>();
-            string[] myRecordString = new string[11];
-            myRecordString[0] = "日期";
-            myRecordString[1] = "总资金";
-            myRecordString[2] = "可用资金";
-            myRecordString[3] = "期权保证金";
-            myRecordString[4] = "期货保证金";
-            myRecordString[5] = "期权现值";
-            myRecordString[6] = "总金额Delta";
-            myRecordString[7] = "期权金额Delta";
-            myRecordString[8] = "期货金额Delta";
-            myRecordString[9] = "日内开仓量";
-            myRecordString[10] ="当日持仓量";
-            myRecordStringList.Add(myRecordString);
-            DocumentApplication.WriteCsv(recordCSV, true, myRecordStringList);
+            recordTableName = recordStr + DateTime.Now.ToString("yyyyMMddhhmm");
+            recordCSV=recordStr+ DateTime.Now.ToString("yyyyMMddhhmm")+".csv";
+            DocumentApplication.RecordCsv(recordCSV, "日期", "总资金", "可用资金", "期权保证金", "期货保证金", "期权现值", "总金额Delta", "期权金额Delta", "期货金额Delta", "日内开仓量", "当日持仓量");
         }
 
 
@@ -287,23 +273,9 @@ namespace StrategyPool
                 delta += myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300;
                 double totalCash = myHoldStatus.cashNow.availableFunds + myHoldStatus.cashNow.optionMargin + myHoldStatus.cashNow.IHMargin+statusLast.presentValue;
                 Console.WriteLine("Date: {0},money: {1}, margin: {2}, volume: {3}, delta: {4}, total: {5}， IHvalue：{6}", today,Math.Round(myHoldStatus.cashNow.availableFunds),Math.Round(myHoldStatus.cashNow.optionMargin),dailyVolume,Math.Round(delta),Math.Round(totalCash),Math.Round(myHoldStatus.cashNow.IHCost));
-                //StoreTradeList(recordList, recordTableName);
-                List<string[]> myRecordStringList = new List<string[]>();
-                string[] myRecordString = new string[11];
-                myRecordString[0] = today.ToString();
-                myRecordString[1] =Math.Round(totalCash).ToString();
-                myRecordString[2] = Math.Round(myHoldStatus.cashNow.availableFunds).ToString();
-                myRecordString[3] = Math.Round(myHoldStatus.cashNow.optionMargin).ToString();
-                myRecordString[4] = Math.Round(myHoldStatus.cashNow.IHMargin).ToString();
-                myRecordString[5] = Math.Round(statusLast.presentValue).ToString();
-                myRecordString[6] = Math.Round(delta).ToString();
-                myRecordString[7] = Math.Round(ETFNow.lastPrice * statusLast.delta).ToString();
-                myRecordString[8] = Math.Round(myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300).ToString();
-                myRecordString[9] = Math.Round(dailyVolume).ToString();
-                myRecordString[10] = Math.Round(statusLast.hold).ToString();
-                myRecordStringList.Add(myRecordString);
-                DocumentApplication.WriteCsv(recordCSV, true, myRecordStringList);
+                DocumentApplication.RecordCsv(recordCSV, today.ToString(),Math.Round(totalCash).ToString(),Math.Round(myHoldStatus.cashNow.availableFunds).ToString(),Math.Round(myHoldStatus.cashNow.optionMargin).ToString(),Math.Round(myHoldStatus.cashNow.IHMargin).ToString(),Math.Round(statusLast.presentValue).ToString(),Math.Round(delta).ToString(),Math.Round(ETFNow.lastPrice * statusLast.delta).ToString(),Math.Round(myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300).ToString(),Math.Round(dailyVolume).ToString(),Math.Round(statusLast.hold).ToString());
                 netValue.Add(Math.Round(totalCash/initialCash,4));
+                StoreTradeList(recordList, recordTableName);
             }
             double std = 0, mean = 0, withdrawal = 0, maxNetValue = 0;
 
@@ -328,6 +300,7 @@ namespace StrategyPool
             double sharpeRatio = 1/Math.Sqrt(netValue.Count) *(netValue[netValue.Count - 1] - 1) / std;
             Console.WriteLine("std: {0}, sharpe: {1}, withdrawal :{2}", std, sharpeRatio, withdrawal);
         }
+
 
         /// <summary>
         /// 获取当前持仓期权的状态
@@ -658,7 +631,7 @@ namespace StrategyPool
                 //利用收益风险比例是否大于1来判断开仓信息。
                 if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) > 1.5 || (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) > 0)
                 {
-                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && sigmaNew > 1.8 * sigmaNewForward)
+                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && sigma > 1.1 * sigmaFurther &&　sigma>sigmaFurther+0.1)
                     {
                         open = true;
                     }

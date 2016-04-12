@@ -14,6 +14,18 @@ namespace StrategyPool
     class DocumentApplication
     {
         /// <summary>
+        /// 存储数据到CSV文件的函数。
+        /// </summary>
+        /// <param name="fileName">CSV文件名</param>
+        /// <param name="myRecordString">具体的数据</param>
+        public static void RecordCsv(string fileName,params string[] myRecordString)
+        {
+            List<string[]> myRecordStringList = new List<string[]>();
+            myRecordStringList.Add(myRecordString);
+            DocumentApplication.WriteCsv(fileName, true, myRecordStringList);
+        }
+        
+        /// <summary>
         /// 将字符串写入csv文档
         /// </summary>
         /// <param name="filePathName">csv文档路径</param>

@@ -46,7 +46,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ComputeNetValue.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="DataApplication.cs" />
     <Compile Include="DocumentApplication.cs" />
