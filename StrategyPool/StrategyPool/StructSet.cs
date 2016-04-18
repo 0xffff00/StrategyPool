@@ -153,13 +153,22 @@ namespace StrategyPool
         public int time;
         public double price;
         public double volume;
-        public optionTradeRecord(int optionCode,int date,int time,double price,double volume)
+        public double volatility;
+        public double cost;
+        public double holdVolume;
+        public string remark;
+
+        public optionTradeRecord(int optionCode,int date,int time,double price,double volume,double volatility=0,double cost=0,double holdVolume=0,string remark="")
         {
             this.optionCode = optionCode;
             this.date = date;
             this.time = time;
             this.price = price;
             this.volume = volume;
+            this.volatility = volatility;
+            this.cost = cost;
+            this.holdVolume = holdVolume;
+            this.remark = remark;
         }
 
     }

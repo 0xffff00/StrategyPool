@@ -21,6 +21,7 @@ namespace StrategyPool
         private string recordCSV;
         private double initialCash;
         private List<double> netValue = new List<double>();
+        private string remark = "";
 
         /// <summary>
         /// 构造函数。初始化各类回测的信息。
@@ -184,6 +185,10 @@ namespace StrategyPool
                         //如果判断出需要平仓，一系列处理。
                         if (closeVolume > 0)
                         {
+                            double frontCost = myHold[pair.frontCode].cost;
+                            double nextCost = myHold[pair.nextCode].cost;
+                            double frontVolume = myHold[pair.frontCode].position + closeVolume;
+                            double nextVolume = myHold[pair.nextCode].position - closeVolume;
                             //处理盘口价格的变动
                             GetPositionModify(myShot[pair.frontCode], myShot[pair.nextCode], closeVolume,time);
                             //处理持仓状态的变动
@@ -191,12 +196,13 @@ namespace StrategyPool
                             myHoldStatus.OptionStatusModification(pair.frontCode, closeVolume, myShot[pair.frontCode].ask[0].price, myShot[pair.frontCode].openMargin, "close");
                             myHoldStatus.OptionStatusModification(pair.nextCode, -closeVolume, myShot[pair.nextCode].bid[0].price, myShot[pair.nextCode].openMargin, "close");
                             //记录交易信息
-                            InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].ask[0].price, closeVolume);
-                            InsertTradeInformation(recordList, pair.nextCode, today, time, myShot[pair.nextCode].bid[0].price, -closeVolume);
+                            InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].ask[0].price, closeVolume, myShot[pair.frontCode].ask[0].volatility,frontCost,frontVolume,remark);
+                            InsertTradeInformation(recordList, pair.nextCode, today, time, myShot[pair.nextCode].bid[0].price, -closeVolume, myShot[pair.nextCode].bid[0].volatility,nextCost,nextVolume,remark);
                         }
                         //开仓
-                        if (myHoldStatus.cashNow.availableFunds/initialCapital<0.3)
+                        if (myHoldStatus.cashNow.availableFunds/initialCapital<0.3 || closeVolume>0)
                             //如果可用资金占用初始资金的30%以下，就不开仓了
+                            //如果已经出发平仓，就不再开仓
                         {
                             continue;
                         }
@@ -211,18 +217,23 @@ namespace StrategyPool
                         {
                             totalVolume += openVolume;
                             dailyVolume += openVolume;
+
                             //处理盘口价格的变动
                             GetPositionModify(myShot[pair.nextCode], myShot[pair.frontCode], openVolume, time);
                             //处理持仓状态的变动
                             //GetHoldStatusModifyByOpen(myHold, myShot[pair.nextCode], myShot[pair.frontCode], ref myHoldStatus.cashNow, openVolume);
                             myHoldStatus.OptionStatusModification(pair.nextCode, openVolume, myShot[pair.nextCode].ask[0].price, myShot[pair.nextCode].openMargin, "open");
                             myHoldStatus.OptionStatusModification(pair.frontCode, -openVolume, myShot[pair.frontCode].bid[0].price, myShot[pair.frontCode].openMargin, "open");
+                            double frontCost = myHold[pair.frontCode].cost;
+                            double nextCost = myHold[pair.nextCode].cost;
+                            double frontVolume = myHold[pair.frontCode].position ;
+                            double nextVolume = myHold[pair.nextCode].position;
                             //记录交易信息
-                            InsertTradeInformation(recordList, pair.nextCode, today, time, myShot[pair.nextCode].ask[0].price, openVolume);
-                            InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].bid[0].price, -openVolume);
+                            InsertTradeInformation(recordList, pair.nextCode, today, time, myShot[pair.nextCode].ask[0].price, openVolume,myShot[pair.nextCode].ask[0].volatility,nextCost,nextVolume,remark);
+                            InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].bid[0].price, -openVolume, myShot[pair.frontCode].bid[0].volatility,frontCost,frontVolume,remark);
                         }
                     }
-                    if (tickIndex%600==0 && tickIndex>=1200)
+                    if (tickIndex%600==0 && tickIndex>=1800)
                     {
                         optionStatus status=GetOptionStatus(myHold, myShot, ETFNow,today,tickIndex);
                         double cashDelta = ETFNow.lastPrice * status.delta;
@@ -275,6 +286,7 @@ namespace StrategyPool
                 Console.WriteLine("Date: {0},money: {1}, margin: {2}, volume: {3}, delta: {4}, total: {5}， IHvalue：{6}", today,Math.Round(myHoldStatus.cashNow.availableFunds),Math.Round(myHoldStatus.cashNow.optionMargin),dailyVolume,Math.Round(delta),Math.Round(totalCash),Math.Round(myHoldStatus.cashNow.IHCost));
                 DocumentApplication.RecordCsv(recordCSV, today.ToString(),Math.Round(totalCash).ToString(),Math.Round(myHoldStatus.cashNow.availableFunds).ToString(),Math.Round(myHoldStatus.cashNow.optionMargin).ToString(),Math.Round(myHoldStatus.cashNow.IHMargin).ToString(),Math.Round(statusLast.presentValue).ToString(),Math.Round(delta).ToString(),Math.Round(ETFNow.lastPrice * statusLast.delta).ToString(),Math.Round(myHoldStatus.cashNow.IHhold * IHNow.lastPrice * 300).ToString(),Math.Round(dailyVolume).ToString(),Math.Round(statusLast.hold).ToString());
                 netValue.Add(Math.Round(totalCash/initialCash,4));
+                //将今日交易记录写入数据库
                 StoreTradeList(recordList, recordTableName);
             }
             double std = 0, mean = 0, withdrawal = 0, maxNetValue = 0;
@@ -362,7 +374,7 @@ namespace StrategyPool
             {
                 conn.Open();//打开数据库  
                 SqlCommand cmd = conn.CreateCommand();
-                cmd.CommandText = "create table [" + Configuration.dataBaseName + "].[dbo].[" + tableName + "] ([Code] int not null,[Date] int not null,[Time] int not null,[Price] float,[Volume] float,primary key ([Code],[Date],[Time]))";
+                cmd.CommandText = "create table [" + Configuration.dataBaseName + "].[dbo].[" + tableName + "] ([Code] int not null,[Date] int not null,[Time] int not null,[Price] float,[Volume] float,[Volatility] float,[Cost] float,[HoldVolume] float,[Remark] char(32),primary key ([Code],[Date],[Time]))";
                 try
                 {
                     cmd.ExecuteReader();
@@ -383,6 +395,10 @@ namespace StrategyPool
                 todayData.Columns.Add("Time", typeof(int));
                 todayData.Columns.Add("Price", typeof(double));
                 todayData.Columns.Add("Volume", typeof(double));
+                todayData.Columns.Add("Volatility", typeof(double));
+                todayData.Columns.Add("Cost", typeof(double));
+                todayData.Columns.Add("HoldVolume", typeof(double));
+                todayData.Columns.Add("Remark", typeof(string));
                 #endregion
 
                 foreach (var item in recordList)
@@ -396,6 +412,10 @@ namespace StrategyPool
                         r["Time"] = record.time;
                         r["Price"] = record.price;
                         r["Volume"] = record.volume;
+                        r["Volatility"] = record.volatility;
+                        r["Cost"] = record.cost;
+                        r["HoldVolume"] = record.holdVolume;
+                        r["Remark"] = record.remark.Trim();
                         todayData.Rows.Add(r);
                         #endregion
                     }
@@ -412,6 +432,10 @@ namespace StrategyPool
                         bulk.ColumnMappings.Add("Time", "Time");
                         bulk.ColumnMappings.Add("Price", "Price");
                         bulk.ColumnMappings.Add("Volume", "Volume");
+                        bulk.ColumnMappings.Add("Volatility","Volatility");
+                        bulk.ColumnMappings.Add("Cost", "Cost");
+                        bulk.ColumnMappings.Add("HoldVolume", "HoldVolume");
+                        bulk.ColumnMappings.Add("Remark", "Remark");
                         #endregion
                         bulk.WriteToServer(todayData);
                     }
@@ -433,7 +457,7 @@ namespace StrategyPool
         /// <param name="time">时间</param>
         /// <param name="price">价格</param>
         /// <param name="volume">交易量</param>
-        private void InsertTradeInformation(Dictionary<int, List<optionTradeRecord>> recordList, int optionCode, int date, int time, double price, double volume)
+        private void InsertTradeInformation(Dictionary<int, List<optionTradeRecord>> recordList, int optionCode, int date, int time, double price, double volume, double volatility, double cost,double holdVolume,string remark)
         {
             List<optionTradeRecord> myRecord = new List<optionTradeRecord>();
             if (recordList.ContainsKey(optionCode)==true)
@@ -445,7 +469,7 @@ namespace StrategyPool
                 recordList.Add(optionCode, myRecord);
 
             }
-            optionTradeRecord record = new optionTradeRecord(optionCode, date, time, price, volume);
+            optionTradeRecord record = new optionTradeRecord(optionCode, date, time, price, volume,volatility,cost,holdVolume,remark);
             myRecord.Add(record);
             recordList[optionCode] = myRecord;
         }
@@ -598,6 +622,7 @@ namespace StrategyPool
         /// <param name="tickIndex">tick下标</param>
         private double GetOpenPosition2(optionFormat frontShot, optionFormat nextShot, int today, int tickIndex, double etfPrice, double duration, double durationFurther)
         {
+            remark = "";
             double openVolume = 0;
             double price = frontShot.bid[0].price;
             double margin = frontShot.openMargin;
@@ -607,7 +632,7 @@ namespace StrategyPool
             bool open = false;
             if (etfPrice * price * volumn * priceFurther * volumnFurther > 0)
             {
-                double r = 0.05;
+                double r = Configuration.RiskFreeReturn;
                 //利用BS公式计算近月以及远月期权的隐含波动率。并用这2个波动率差值得到近月合约到期时候，期权对应的隐含波动率。
                 double sigma = frontShot.bid[0].volatility;
                 double sigmaFurther = nextShot.ask[0].volatility;
@@ -631,9 +656,10 @@ namespace StrategyPool
                 //利用收益风险比例是否大于1来判断开仓信息。
                 if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) > 1.5 || (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) > 0)
                 {
-                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && sigma > 1.1 * sigmaFurther &&　sigma>sigmaFurther+0.1)
+                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02)
                     {
                         open = true;
+                        remark = "满足开仓条件";
                     }
 
                 }
@@ -703,6 +729,7 @@ namespace StrategyPool
         /// <returns></returns>
         private double GetClosePosition2(optionFormat frontShot, optionFormat nextShot, optionHold frontHold, optionHold nextHold,int today, int tickIndex, double etfPrice, double duration, double durationFurther)
         {
+            remark = "";
             if (frontHold.position == 0 || frontShot.ask == null || nextShot.bid == null)
             {
                 return 0;
@@ -716,7 +743,7 @@ namespace StrategyPool
             bool close  = false;
             if (etfPrice * price * volumn * priceFurther * volumnFurther > 0)
             {
-                double r = 0.05;
+                double r = Configuration.RiskFreeReturn;
                 //利用BS公式计算近月以及远月期权的隐含波动率。并用这2个波动率差值得到近月合约到期时候，期权对应的隐含波动率。
                 double sigma = frontShot.ask[0].volatility;
                 double sigmaFurther = nextShot.bid[0].volatility;
@@ -738,21 +765,37 @@ namespace StrategyPool
                 double interestUp = up - (priceFurther - price);
                 double interestDown = down - (priceFurther - price);
                 //止损，收益率不够就止损。
-                if ((interestNoChange - lossOfLiquidity) / margin < 0.01)
-                {
-                    close = true;
-                }
-                if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) < 0.5 && (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))<0)
-                {
-                        close = true;
+                //if ((interestNoChange - lossOfLiquidity) / margin < 0.01)
+                //{
+                //    close = true;
+                //    remark = "保证金占用过多 ";
+                //}
+                //if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) < 0 && (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) < 0)
+                //{
+                //    close = true;
+                //    remark += "预期收益不足 ";
 
-                }
+                //}
+
                 //止盈，只有收益大于一定程度才平仓。
                 double cost = nextHold.cost - frontHold.cost;//跨期组合开仓成本
                 double presentValue = nextShot.bid[0].price - frontShot.ask[0].price;//跨期组合的现值
-                if (presentValue/cost>1.25 && (presentValue-cost)>0.05)
+                if ((presentValue - cost)/cost>1.25 || (presentValue-cost)>0.03)
                 {
                     close = true;
+                    remark += "止盈 ";
+                }
+                //止损，只有损失大于一定程度才平仓。
+                if ((presentValue - cost) < -0.03)
+                {
+                    close = true;
+                    remark += "止损 ";
+                }
+                //强平，期权越到期合约越容易平仓。
+                if ((presentValue - cost) < 0.005*Math.Sqrt(duration0) && duration0<=3)
+                {
+                    close = true;
+                    remark += "强平 ";
                 }
             }
             if (close == true)
