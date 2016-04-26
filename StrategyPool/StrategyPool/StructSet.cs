@@ -151,6 +151,9 @@ namespace StrategyPool
         public int optionCode;
         public int date;
         public int time;
+        public double strike;
+        public double ETFPrice;
+        public string type;
         public double price;
         public double volume;
         public double volatility;
@@ -158,11 +161,14 @@ namespace StrategyPool
         public double holdVolume;
         public string remark;
 
-        public optionTradeRecord(int optionCode,int date,int time,double price,double volume,double volatility=0,double cost=0,double holdVolume=0,string remark="")
+        public optionTradeRecord(int optionCode,int date,int time,double price,double volume,double  ETFPrice,double strike=0,string type="",double volatility=0,double cost=0,double holdVolume=0,string remark="")
         {
             this.optionCode = optionCode;
             this.date = date;
             this.time = time;
+            this.ETFPrice = ETFPrice;
+            this.strike = strike;
+            this.type = type;
             this.price = price;
             this.volume = volume;
             this.volatility = volatility;

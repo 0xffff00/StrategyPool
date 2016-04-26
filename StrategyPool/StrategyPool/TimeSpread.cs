@@ -196,8 +196,8 @@ namespace StrategyPool
                             myHoldStatus.OptionStatusModification(pair.frontCode, closeVolume, myShot[pair.frontCode].ask[0].price, myShot[pair.frontCode].openMargin, "close");
                             myHoldStatus.OptionStatusModification(pair.nextCode, -closeVolume, myShot[pair.nextCode].bid[0].price, myShot[pair.nextCode].openMargin, "close");
                             //记录交易信息
-                            InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].ask[0].price, closeVolume, myShot[pair.frontCode].ask[0].volatility,frontCost,frontVolume,remark);
-                            InsertTradeInformation(recordList, pair.nextCode, today, time, myShot[pair.nextCode].bid[0].price, -closeVolume, myShot[pair.nextCode].bid[0].volatility,nextCost,nextVolume,remark);
+                            InsertTradeInformation(recordList, pair.frontCode, today, time, ETFNow.lastPrice, myShot[pair.frontCode].strike, myShot[pair.frontCode].type, myShot[pair.frontCode].ask[0].price, closeVolume, myShot[pair.frontCode].ask[0].volatility,frontCost,frontVolume,remark);
+                            InsertTradeInformation(recordList, pair.nextCode, today, time, ETFNow.lastPrice, myShot[pair.nextCode].strike, myShot[pair.nextCode].type, myShot[pair.nextCode].bid[0].price, -closeVolume, myShot[pair.nextCode].bid[0].volatility,nextCost,nextVolume,remark);
                         }
                         //开仓
                         if (myHoldStatus.cashNow.availableFunds/initialCapital<0.3 || closeVolume>0)
@@ -229,8 +229,8 @@ namespace StrategyPool
                             double frontVolume = myHold[pair.frontCode].position ;
                             double nextVolume = myHold[pair.nextCode].position;
                             //记录交易信息
-                            InsertTradeInformation(recordList, pair.nextCode, today, time, myShot[pair.nextCode].ask[0].price, openVolume,myShot[pair.nextCode].ask[0].volatility,nextCost,nextVolume,remark);
-                            InsertTradeInformation(recordList, pair.frontCode, today, time, myShot[pair.frontCode].bid[0].price, -openVolume, myShot[pair.frontCode].bid[0].volatility,frontCost,frontVolume,remark);
+                            InsertTradeInformation(recordList, pair.nextCode, today, time,ETFNow.lastPrice, myShot[pair.nextCode].strike, myShot[pair.nextCode].type, myShot[pair.nextCode].ask[0].price, openVolume,myShot[pair.nextCode].ask[0].volatility,nextCost,nextVolume,remark);
+                            InsertTradeInformation(recordList, pair.frontCode, today, time,ETFNow.lastPrice,myShot[pair.frontCode].strike, myShot[pair.frontCode].type,myShot[pair.frontCode].bid[0].price, -openVolume, myShot[pair.frontCode].bid[0].volatility,frontCost,frontVolume,remark);
                         }
                     }
                     if (tickIndex%600==0 && tickIndex>=1800)
@@ -263,7 +263,7 @@ namespace StrategyPool
                             {
                                 recordList.Add(ihName, ihRecord);
                             }
-                            optionTradeRecord ihRecord0 = new optionTradeRecord(ihName, today, time, IHNow.lastPrice, IHVolume);
+                            optionTradeRecord ihRecord0 = new optionTradeRecord(ihName, today, time, IHNow.lastPrice, IHVolume,ETFNow.lastPrice);
                             ihRecord.Add(ihRecord0);
                             recordList[ihName] = ihRecord;
                             //Console.WriteLine("Date: {0}, time: {1}, optionDelta: {2}, IHDelta: {3}, IHCost: {4}", today, time, Math.Round(cashDelta), Math.Round(IHDelta),Math.Round(myHoldStatus.cashNow.IHCost));
@@ -374,7 +374,7 @@ namespace StrategyPool
             {
                 conn.Open();//打开数据库  
                 SqlCommand cmd = conn.CreateCommand();
-                cmd.CommandText = "create table [" + Configuration.dataBaseName + "].[dbo].[" + tableName + "] ([Code] int not null,[Date] int not null,[Time] int not null,[Price] float,[Volume] float,[Volatility] float,[Cost] float,[HoldVolume] float,[Remark] char(32),primary key ([Code],[Date],[Time]))";
+                cmd.CommandText = "create table [" + Configuration.dataBaseName + "].[dbo].[" + tableName + "] ([Code] int not null,[Date] int not null,[Time] int not null,[Strike] float,[Type] char(12),[ETF] float,[Price] float,[Volume] float,[Volatility] float,[Cost] float,[HoldVolume] float,[Remark] char(32),primary key ([Code],[Date],[Time]))";
                 try
                 {
                     cmd.ExecuteReader();
@@ -393,6 +393,9 @@ namespace StrategyPool
                 todayData.Columns.Add("Code", typeof(int));
                 todayData.Columns.Add("Date", typeof(int));
                 todayData.Columns.Add("Time", typeof(int));
+                todayData.Columns.Add("Strike", typeof(double));
+                todayData.Columns.Add("Type", typeof(string));
+                todayData.Columns.Add("ETF", typeof(double));
                 todayData.Columns.Add("Price", typeof(double));
                 todayData.Columns.Add("Volume", typeof(double));
                 todayData.Columns.Add("Volatility", typeof(double));
@@ -410,6 +413,9 @@ namespace StrategyPool
                         r["Code"] = record.optionCode;
                         r["Date"] = record.date;
                         r["Time"] = record.time;
+                        r["Type"] = record.type;
+                        r["Strike"] = record.strike;
+                        r["ETF"] = record.ETFPrice;
                         r["Price"] = record.price;
                         r["Volume"] = record.volume;
                         r["Volatility"] = record.volatility;
@@ -430,6 +436,9 @@ namespace StrategyPool
                         bulk.ColumnMappings.Add("Code", "Code");
                         bulk.ColumnMappings.Add("Date", "Date");
                         bulk.ColumnMappings.Add("Time", "Time");
+                        bulk.ColumnMappings.Add("ETF", "ETF");
+                        bulk.ColumnMappings.Add("Strike", "Strike");
+                        bulk.ColumnMappings.Add("Type", "Type");
                         bulk.ColumnMappings.Add("Price", "Price");
                         bulk.ColumnMappings.Add("Volume", "Volume");
                         bulk.ColumnMappings.Add("Volatility","Volatility");
@@ -457,7 +466,7 @@ namespace StrategyPool
         /// <param name="time">时间</param>
         /// <param name="price">价格</param>
         /// <param name="volume">交易量</param>
-        private void InsertTradeInformation(Dictionary<int, List<optionTradeRecord>> recordList, int optionCode, int date, int time, double price, double volume, double volatility, double cost,double holdVolume,string remark)
+        private void InsertTradeInformation(Dictionary<int, List<optionTradeRecord>> recordList, int optionCode, int date, int time, double ETFPrice, double strike, string type, double price,double volume, double volatility, double cost,double holdVolume,string remark)
         {
             List<optionTradeRecord> myRecord = new List<optionTradeRecord>();
             if (recordList.ContainsKey(optionCode)==true)
@@ -469,7 +478,7 @@ namespace StrategyPool
                 recordList.Add(optionCode, myRecord);
 
             }
-            optionTradeRecord record = new optionTradeRecord(optionCode, date, time, price, volume,volatility,cost,holdVolume,remark);
+            optionTradeRecord record = new optionTradeRecord(optionCode, date, time, price, volume,ETFPrice,strike,type,volatility,cost,holdVolume,remark);
             myRecord.Add(record);
             recordList[optionCode] = myRecord;
         }
@@ -792,7 +801,7 @@ namespace StrategyPool
                     remark += "止损 ";
                 }
                 //强平，期权越到期合约越容易平仓。
-                if ((presentValue - cost) < 0.005*Math.Sqrt(duration0) && duration0<=3)
+                if ((presentValue - cost) < 0.005*Math.Sqrt(duration0) || duration0<=3)
                 {
                     close = true;
                     remark += "强平 ";

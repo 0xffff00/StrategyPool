@@ -70,6 +70,10 @@
 版本：v1.0.11
 日期：2016年4月14日。
 ##############################################
+1、更新记录交易信息，添加ETF价格,strike,type等的字段。
+版本：v1.0.12
+日期：2016年4月26日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -85,8 +89,8 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            TimeSpread mySpread = new TimeSpread(100000000, 20150901, 20151231,"timeSpread");
+            TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231,"timeSpread");
             mySpread.TimeSpreadAnalysis();
         }
-    }+
+    }
 }
