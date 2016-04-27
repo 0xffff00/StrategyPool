@@ -31,6 +31,67 @@ namespace StrategyPool
         }
 
         /// <summary>
+        /// 隐含波动率的近似解
+        /// </summary>
+        /// <param name="etfPrice">etf价格</param>
+        /// <param name="optionPrice">期权价格</param>
+        /// <param name="strike">行权价</param>
+        /// <param name="duration">期限</param>
+        /// <param name="r">无风险利率</param>
+        /// <param name="optionType">期权类型</param>
+        /// <returns>近似解</returns>
+        public static double approximateSigma(double etfPrice, double optionPrice, double strike, double duration, double r, string optionType)
+        {
+            double sigma = 0.0;
+            duration /= 252.0;//调整为年化的时间。
+            if (optionType.Equals("认沽"))
+            {
+                optionPrice = optionPrice + etfPrice - strike * Math.Exp(-r * duration);
+                if (strike * Math.Exp(-r * duration) - etfPrice > optionPrice)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                if (optionPrice < etfPrice - strike * Math.Exp(-r * duration))
+                {
+                    return 0;
+                }
+            }
+
+            double eta = strike * Math.Exp(-r * duration) / etfPrice;
+            double rho = Math.Abs(eta - 1) / Math.Pow((optionPrice / etfPrice), 2);
+            double alpha = Math.Sqrt(2 * Math.PI) / (1 + eta) * (2 * optionPrice / etfPrice + eta - 1);
+            double beta = Math.Cos(Math.Acos(3 * alpha / Math.Sqrt(32)) / 3);
+            if (rho<=1.4)
+            {
+                double radicand = 8 * beta * beta - 6 * alpha / Math.Sqrt(2 * beta);
+                if (radicand<0)
+                {
+                    return sigma;
+                }
+                else
+                {
+                    sigma = Math.Sqrt(8 / duration) * beta - Math.Sqrt(radicand / duration);
+                }
+            }
+            else
+            {
+                double radicand = alpha * alpha - 4 * Math.Pow(eta - 1, 2) / (1 + eta);
+                if (radicand < 0)
+                {
+                    return sigma;
+                }
+                else
+                {
+                    sigma = (alpha + Math.Sqrt(radicand)) / (2 * Math.Sqrt(duration));
+                }
+            }
+            return sigma;
+        }
+
+        /// <summary>
         /// 利用期权价格等参数计算隐含波动率
         /// </summary>
         /// <param name="etfPrice">50etf价格</param>

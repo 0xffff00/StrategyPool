@@ -27,6 +27,57 @@ namespace StrategyPool
             this.dataBase = dataBase;
         }
 
+        //public Dictionary<int,double> GetETFRealizedVolatility(DataTable data,int period)
+        //{
+            
+        //}
+
+        /// <summary>
+        /// 读取50etf前收盘数据的函数
+        /// </summary>
+        /// <param name="tableName">50etf表</param>
+        /// <param name="startDate">开始日期</param>
+        /// <param name="endDate">结束日期</param>
+        /// <returns></returns>
+        public DataTable GetETFPreClosePrice(string tableName,int startDate=0,int endDate=0)
+        {
+            DataTable myDataTable = new DataTable();
+            string commandString;
+            if (startDate == 0)
+            {
+                commandString = "select distinct [PreClose],[date] from " + tableName+" order by [Date]";
+            }
+            else
+            {
+                if (endDate == 0)
+                {
+                    endDate = startDate;
+                }
+                endDate = TradeDays.GetNextTradeDay(endDate);
+                commandString = "select distinct [PreClose],[date] from " + tableName + "  where [Date]>=" + startDate.ToString() + " and [Date]<=" + endDate.ToString()+ " order by [Date]";
+            }
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    using (SqlCommand command = conn.CreateCommand())
+                    {
+                        command.CommandText = commandString;
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            adapter.Fill(myDataTable);
+                        }
+                    }
+                }
+
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            return myDataTable;
+        }
+
         /// <summary>
         /// 根据给定的表和日期获取数据内容。
         /// </summary>

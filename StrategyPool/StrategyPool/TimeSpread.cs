@@ -779,12 +779,12 @@ namespace StrategyPool
                 //    close = true;
                 //    remark = "保证金占用过多 ";
                 //}
-                //if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) < 0 && (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) < 0)
-                //{
-                //    close = true;
-                //    remark += "预期收益不足 ";
+                if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) < 0 && (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) < 0)
+                {
+                    close = true;
+                    remark += "预期收益不足 ";
 
-                //}
+                }
 
                 //止盈，只有收益大于一定程度才平仓。
                 double cost = nextHold.cost - frontHold.cost;//跨期组合开仓成本
@@ -794,14 +794,14 @@ namespace StrategyPool
                     close = true;
                     remark += "止盈 ";
                 }
-                //止损，只有损失大于一定程度才平仓。
-                if ((presentValue - cost) < -0.03)
-                {
-                    close = true;
-                    remark += "止损 ";
-                }
-                //强平，期权越到期合约越容易平仓。
-                if ((presentValue - cost) < 0.005*Math.Sqrt(duration0) || duration0<=3)
+                ////止损，只有损失大于一定程度才平仓。
+                //if ((presentValue - cost) < -0.03)
+                //{
+                //    close = true;
+                //    remark += "止损 ";
+                //}
+                //强平，期权快到期时强行平仓。
+                if (duration0<=3)
                 {
                     close = true;
                     remark += "强平 ";

@@ -74,6 +74,11 @@
 版本：v1.0.12
 日期：2016年4月26日。
 ##############################################
+1、更新隐含波动率的近似求解方法。
+2、写入计算历史波动率的函数。
+版本：v1.1.1
+日期：2016年4月27日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -89,8 +94,11 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231,"timeSpread");
-            mySpread.TimeSpreadAnalysis();
+            //TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231,"timeSpread");
+            //mySpread.TimeSpreadAnalysis();
+            double etf = 2.69, putprice=1,strike = 2.75, t = 14 , r = 0.05;
+            double sigma1 = Impv.approximateSigma(etf, putprice, strike, t, r, "认沽");
+            double sigma2 = Impv.sigma(etf, putprice, strike, t, r, "认沽");
         }
     }
 }
