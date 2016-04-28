@@ -22,6 +22,7 @@ namespace StrategyPool
         private double initialCash;
         private List<double> netValue = new List<double>();
         private string remark = "";
+        private SortedDictionary<int, double> historicalVolatility = new SortedDictionary<int, double>();
 
         /// <summary>
         /// 构造函数。初始化各类回测的信息。
@@ -40,6 +41,7 @@ namespace StrategyPool
             myOptionInfo = new OptionCodeInformation(Configuration.dataBaseName, Configuration.optionCodeTableName, Configuration.connectionString);
             feePerUnit = Configuration.optionFeePerUnit;
             myData = new DataApplication(Configuration.dataBaseName, Configuration.connectionString);
+            historicalVolatility = GetHistoricalVolatility(myData.GetETFPreClosePrice(Configuration.tableOf50ETF), 0.8);
             recordTableName = recordStr + DateTime.Now.ToString("yyyyMMddhhmm");
             recordCSV=recordStr+ DateTime.Now.ToString("yyyyMMddhhmm")+".csv";
             DocumentApplication.RecordCsv(recordCSV, "日期", "总资金", "可用资金", "期权保证金", "期货保证金", "期权现值", "总金额Delta", "期权金额Delta", "期货金额Delta", "日内开仓量", "当日持仓量");
@@ -74,7 +76,7 @@ namespace StrategyPool
 
                 //第一步，选取今日应当关注的合约代码，包括平价附近的期权合约以及昨日遗留下来的持仓。其中，平价附近的期权合约必须满足交易日的需求，昨日遗留下来的持仓必须全部囊括。
                 //注意，某些合约既要进行开仓判断又要进行平仓判断。
-                List<timeSpreadPair> optionPairList = GetSpreadPair(myHold,ETF, today,3,18);
+                List<timeSpreadPair> optionPairList = GetSpreadPair(myHold,ETF, today,3,15);
                 
 
                 
@@ -311,6 +313,41 @@ namespace StrategyPool
             std = Math.Sqrt(std / netValue.Count);
             double sharpeRatio = 1/Math.Sqrt(netValue.Count) *(netValue[netValue.Count - 1] - 1) / std;
             Console.WriteLine("std: {0}, sharpe: {1}, withdrawal :{2}", std, sharpeRatio, withdrawal);
+        }
+
+        /// <summary>
+        /// EWMA方法计算历史波动率。lambda的大小和预测期限相关。
+        /// </summary>
+        /// <param name="etfPrice">etf价格</param>
+        /// <param name="lambda">参数</param>
+        /// <returns>历史波动率</returns>
+        private SortedDictionary<int,double> GetHistoricalVolatility(SortedDictionary<int,double> etfPrice,double lambda)
+        {
+            SortedDictionary<int, double> volatility = new SortedDictionary<int, double>();
+            int length = volatility.Count;
+            int yesterday=0;
+            double lastPrice=0;
+            double vol = 0;
+            foreach (var item in etfPrice) 
+            {
+                if (lastPrice>0)
+                {
+                    double u = Math.Log(item.Value / lastPrice);
+                    if (vol==0)
+                    {
+                        vol = u;
+                    }
+                    else
+                    {
+                        vol =Math.Sqrt(Math.Pow(vol, 2) * lambda + Math.Pow(u, 2) * (1 - lambda));
+                    }
+                    volatility.Add(item.Key,Math.Sqrt(252)*vol);
+                }
+                yesterday = item.Key;
+                lastPrice = item.Value;
+            }
+            return volatility;
+            
         }
 
 
@@ -645,6 +682,7 @@ namespace StrategyPool
                 //利用BS公式计算近月以及远月期权的隐含波动率。并用这2个波动率差值得到近月合约到期时候，期权对应的隐含波动率。
                 double sigma = frontShot.bid[0].volatility;
                 double sigmaFurther = nextShot.ask[0].volatility;
+                double hisVol = historicalVolatility[today];
                 double duration0 = duration + (28801 - tickIndex) / 28801.0;
                 double durationFurther0 = durationFurther + (28801 - tickIndex) / 28801.0;
                 double sigmaNew = Math.Sqrt(sigma * sigma * (duration0) / (durationFurther0 - duration0) + sigmaFurther * sigmaFurther * (durationFurther0 - 2 * duration0) / (durationFurther0 - duration0));
@@ -653,8 +691,10 @@ namespace StrategyPool
                 double strike = frontShot.strike;
                 string type = frontShot.type;
                 //利用隐含波动率来估计近月期权合约到期时候50etf的价格，这里使用若干倍的sigma来计算。
-                double etfPriceFurtherUp = etfPrice * Math.Exp(2 * sigma * Math.Sqrt(duration0 / 252.0));
-                double etfPriceFurtherDown = etfPrice * Math.Exp(-2 * sigma * Math.Sqrt(duration0 / 252.0));
+                //double etfPriceFurtherUp = etfPrice * Math.Exp(2 * sigma * Math.Sqrt(duration0 / 252.0));
+                //double etfPriceFurtherDown = etfPrice * Math.Exp(-2 * sigma * Math.Sqrt(duration0 / 252.0));
+                double etfPriceFurtherUp = etfPrice * Math.Exp(2 * hisVol * Math.Sqrt(duration0 / 252.0));
+                double etfPriceFurtherDown = etfPrice * Math.Exp(-2 * hisVol * Math.Sqrt(duration0 / 252.0));
                 double noChange = Impv.optionLastPrice(etfPrice, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPrice, sigmaNew, strike, 0, r, type);
                 //计算出持有头寸价值的上下限。
                 double up = Impv.optionLastPrice(etfPriceFurtherUp, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPriceFurtherUp, sigmaNew, strike, 0, r, type);
@@ -665,7 +705,7 @@ namespace StrategyPool
                 //利用收益风险比例是否大于1来判断开仓信息。
                 if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) > 1.5 || (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) > 0)
                 {
-                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02)
+                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && hisVol<0.6)
                     {
                         open = true;
                         remark = "满足开仓条件";
@@ -756,6 +796,7 @@ namespace StrategyPool
                 //利用BS公式计算近月以及远月期权的隐含波动率。并用这2个波动率差值得到近月合约到期时候，期权对应的隐含波动率。
                 double sigma = frontShot.ask[0].volatility;
                 double sigmaFurther = nextShot.bid[0].volatility;
+                double hisVol = historicalVolatility[today];
                 // double lossOfLiquidity = Math.Abs(frontShot.bid[0].price - frontShot.ask[0].price) + Math.Abs(nextShot.bid[0].price - nextShot.ask[0].price);
                 double lossOfLiquidity = 0;
                 double duration0 = duration + (28801 - tickIndex) / 28801.0;
@@ -764,8 +805,8 @@ namespace StrategyPool
                 string type = frontShot.type;
                 double sigmaNew = Math.Sqrt(sigma * sigma * (duration0) / (durationFurther0 - duration0) + sigmaFurther * sigmaFurther * (durationFurther0 - 2 * duration0) / (durationFurther0 - duration0));
                 //利用隐含波动率来估计近月期权合约到期时候50etf的价格，这里使用若干倍的sigma来计算。
-                double etfPriceFurtherUp = etfPrice * Math.Exp(2 * sigma * Math.Sqrt(duration0 / 252.0));
-                double etfPriceFurtherDown = etfPrice * Math.Exp(-2 * sigma * Math.Sqrt(duration0 / 252.0));
+                double etfPriceFurtherUp = etfPrice * Math.Exp(2 * hisVol * Math.Sqrt(duration0 / 252.0));
+                double etfPriceFurtherDown = etfPrice * Math.Exp(-2 * hisVol * Math.Sqrt(duration0 / 252.0));
                 double noChange = Impv.optionLastPrice(etfPrice, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPrice, sigmaNew, strike, 0, r, type);
                 //计算出持有头寸价值的上下限。
                 double up = Impv.optionLastPrice(etfPriceFurtherUp, sigmaNew, strike, durationFurther0 - duration0, r, type) - Impv.optionLastPrice(etfPriceFurtherUp, sigmaNew, strike, 0, r, type);
@@ -785,11 +826,16 @@ namespace StrategyPool
                     remark += "预期收益不足 ";
 
                 }
+                //if (Math.Abs(Math.Log(etfPrice/strike)*Math.Sqrt(252))/(sigma+0.01)>1)
+                //{
+                //    close = true;
+                //    remark += "价格运动太大 ";
+                //}
 
                 //止盈，只有收益大于一定程度才平仓。
                 double cost = nextHold.cost - frontHold.cost;//跨期组合开仓成本
                 double presentValue = nextShot.bid[0].price - frontShot.ask[0].price;//跨期组合的现值
-                if ((presentValue - cost)/cost>1.25 || (presentValue-cost)>0.03)
+                if ((presentValue - cost) / cost > 1.25 || (presentValue - cost) > 0.03)
                 {
                     close = true;
                     remark += "止盈 ";

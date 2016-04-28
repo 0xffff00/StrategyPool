@@ -79,6 +79,10 @@
 版本：v1.1.1
 日期：2016年4月27日。
 ##############################################
+1、利用历史波动率来判断etf价格运动的上下界，而不是隐含波动率
+版本：v1.1.2
+日期：2016年4月28日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -94,11 +98,8 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            //TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231,"timeSpread");
-            //mySpread.TimeSpreadAnalysis();
-            double etf = 2.69, putprice=1,strike = 2.75, t = 14 , r = 0.05;
-            double sigma1 = Impv.approximateSigma(etf, putprice, strike, t, r, "认沽");
-            double sigma2 = Impv.sigma(etf, putprice, strike, t, r, "认沽");
+            TimeSpread mySpread = new TimeSpread(50000000, 20150501, 20151231,"timeSpread");
+            mySpread.TimeSpreadAnalysis();
         }
     }
 }
