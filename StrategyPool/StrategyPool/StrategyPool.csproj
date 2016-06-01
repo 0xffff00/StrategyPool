@@ -55,6 +55,7 @@
     <Compile Include="PositionApplication.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RBDaily.cs" />
     <Compile Include="SqlApplication.cs" />
     <Compile Include="StructSet.cs" />
     <Compile Include="TimeSpread.cs" />

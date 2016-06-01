@@ -6,6 +6,21 @@ using System.Threading.Tasks;
 
 namespace StrategyPool
 {
+    struct RBFormat
+    {
+        public string code;
+        public int tradeDate, naturalDate, tradeTime, tradeStatus;
+        public double ask, bid, askv, bidv, lastPrice, highPrice, lowPrice,volume,turnover,openInterest,preOpenInterest,preClose,preSettle;
+    }
+    
+    struct RBStatus
+    {
+        public int date,time;
+        public double ask, bid, askv, bidv, lastPrice, deltaVolume, deltaTurnover, deltaOpenInterest, avgPrice;
+    }
+
+
+
     /// <summary>
     /// 期权价格格式
     /// </summary>

@@ -35,6 +35,10 @@ namespace StrategyPool
         /// </summary>
         public static string connectionString = "server=(local);database=Option;Integrated Security=true;";
         /// <summary>
+        /// 提供远程数据库的sql连接字符串信息。
+        /// </summary>
+        public static string connectionString218= "server=192.168.38.218;uid =sa;pwd=666666;";
+        /// <summary>
         /// 给定期权标的的名称。
         /// </summary>
         public static string underlyingAsset = "510050.SH";

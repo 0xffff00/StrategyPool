@@ -83,6 +83,10 @@
 版本：v1.1.2
 日期：2016年4月28日。
 ##############################################
+1、写入螺纹钢日内交易的类，搭建日内期货回测的框架
+版本：v1.2.0
+日期：2016年6月1日。
+##############################################
 */
 using System;
 using System.Collections.Generic;
@@ -98,8 +102,10 @@ namespace StrategyPool
     {
         static void Main(string[] args)
         {
-            TimeSpread mySpread = new TimeSpread(50000000, 20150501, 20151231,"timeSpread");
-            mySpread.TimeSpreadAnalysis();
+            //TimeSpread mySpread = new TimeSpread(100000000, 20150501, 20151231,"timeSpread");
+            //mySpread.TimeSpreadAnalysis();
+            RBDaily myRB = new RBDaily(10000, 20130701, 20131231, "RBDaily");
+            myRB.MomentumAnalysis();
         }
     }
 }

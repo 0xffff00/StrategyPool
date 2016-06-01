@@ -88,6 +88,7 @@ namespace StrategyPool
         public DataTable GetDataTable(string tableName, int startDate=0, int endDate = 0)
         {
             DataTable myDataTable = new DataTable();
+            tableName = "[" + dataBase + "].[dbo].[" + tableName + "]";
             string commandString;
             if (startDate==0)
             {
@@ -102,6 +103,85 @@ namespace StrategyPool
                 commandString = "select * from " + tableName + " where [Date]>=" + startDate.ToString() + " and [Date]<=" + endDate.ToString();
             }
             
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    using (SqlCommand command = conn.CreateCommand())
+                    {
+                        command.CommandText = commandString;
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            adapter.Fill(myDataTable);
+                        }
+                    }
+                }
+
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            return myDataTable;
+        }
+
+        /// <summary>
+        /// 查询表中数据条目个数的函数。
+        /// </summary>
+        /// <param name="tableName">表名</param>
+        /// <returns></returns>
+        public int CountNumber(string tableName)
+        {
+            int count = 0;
+            tableName = "[" + dataBase + "].[dbo].[" + tableName + "]";
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();//打开数据库  
+                    using (SqlCommand command = conn.CreateCommand())
+                    {
+                        command.CommandText = "select count(*) from "+tableName;
+                        int num= (int)command.ExecuteScalar();
+                        count = num;
+                    }
+                }
+
+            }
+            catch (Exception myerror)
+            {
+                System.Console.WriteLine(myerror.Message);
+            }
+
+            return count;
+        }
+
+
+        /// <summary>
+        /// 根据给定的表和日期获取数据内容。
+        /// </summary>
+        /// <param name="tableName">表的名称</param>
+        /// <param name="startDate">开始时间</param>
+        /// <param name="endDate">结束时间</param>
+        /// <returns>DataTable格式的数据</returns>
+        public DataTable GetCommodityDataTable(string tableName, int startDate = 0, int endDate = 0)
+        {
+            DataTable myDataTable = new DataTable();
+            tableName = "[" + dataBase + "].[dbo].[" + tableName + "]";
+            string commandString;
+            if (startDate == 0)
+            {
+                commandString = "select * from " + tableName;
+            }
+            else
+            {
+                if (endDate == 0)
+                {
+                    endDate = startDate;
+                }
+                commandString = "select * from " + tableName + " where [tdate]>=" + startDate.ToString() + " and [tdate]<=" + endDate.ToString()+"order by id";
+            }
+
             try
             {
                 using (SqlConnection conn = new SqlConnection(connectionString))

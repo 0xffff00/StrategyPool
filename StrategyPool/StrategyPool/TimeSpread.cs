@@ -76,7 +76,7 @@ namespace StrategyPool
 
                 //第一步，选取今日应当关注的合约代码，包括平价附近的期权合约以及昨日遗留下来的持仓。其中，平价附近的期权合约必须满足交易日的需求，昨日遗留下来的持仓必须全部囊括。
                 //注意，某些合约既要进行开仓判断又要进行平仓判断。
-                List<timeSpreadPair> optionPairList = GetSpreadPair(myHold,ETF, today,3,15);
+                List<timeSpreadPair> optionPairList = GetSpreadPair(myHold,ETF, today,3,18);
                 
 
                 
@@ -705,7 +705,7 @@ namespace StrategyPool
                 //利用收益风险比例是否大于1来判断开仓信息。
                 if ((interestNoChange - lossOfLiquidity) / Math.Abs((Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity))) > 1.5 || (Math.Min(interestUp - lossOfLiquidity, interestDown - lossOfLiquidity)) > 0)
                 {
-                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && hisVol<0.6)
+                    if ((interestNoChange - lossOfLiquidity) / margin > 0.02 && hisVol<2)
                     {
                         open = true;
                         remark = "满足开仓条件";
